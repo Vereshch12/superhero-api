@@ -2,6 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .models import Hero
 from .serializers import HeroSerializer
 from .services import SuperheroAPIService
@@ -13,6 +15,21 @@ class HeroView(APIView):
     POST: Add a new hero by name, fetching data from Superhero API.
     GET: Retrieve heroes with optional filters for name, intelligence, strength, speed, and power.
     """
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['name'],
+            properties={
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Name of the hero (case-sensitive)'),
+            },
+        ),
+        responses={
+            201: HeroSerializer,
+            400: openapi.Response('Invalid request (missing or empty name, hero already exists)'),
+            404: openapi.Response('Hero not found in Superhero API'),
+            500: openapi.Response('Server error (e.g., Superhero API unavailable)'),
+        }
+    )
     def post(self, request):
         """
         Add a new hero to the database.
@@ -57,6 +74,24 @@ class HeroView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('name', openapi.IN_QUERY, description="Exact match for hero name (case-insensitive)", type=openapi.TYPE_STRING),
+            openapi.Parameter('intelligence', openapi.IN_QUERY, description="Filter by intelligence value", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('intelligence_op', openapi.IN_QUERY, description="Operator for intelligence ('eq', 'gte', 'lte')", type=openapi.TYPE_STRING, default='eq'),
+            openapi.Parameter('strength', openapi.IN_QUERY, description="Filter by strength value", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('strength_op', openapi.IN_QUERY, description="Operator for strength ('eq', 'gte', 'lte')", type=openapi.TYPE_STRING, default='eq'),
+            openapi.Parameter('speed', openapi.IN_QUERY, description="Filter by speed value", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('speed_op', openapi.IN_QUERY, description="Operator for speed ('eq', 'gte', 'lte')", type=openapi.TYPE_STRING, default='eq'),
+            openapi.Parameter('power', openapi.IN_QUERY, description="Filter by power value", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('power_op', openapi.IN_QUERY, description="Operator for power ('eq', 'gte', 'lte')", type=openapi.TYPE_STRING, default='eq'),
+        ],
+        responses={
+            200: HeroSerializer(many=True),
+            400: openapi.Response('Invalid numeric parameter'),
+            404: openapi.Response('No heroes found matching the criteria'),
+        }
+    )
     def get(self, request):
         """
         Retrieve heroes with optional filters.

@@ -8,7 +8,7 @@ schema_view = get_schema_view(
     openapi.Info(
         title="Superhero API",
         default_version='v1',
-        description="API for managing superheroes",
+        description="API for managing superheroes, fetching data from Superhero API and storing in PostgreSQL.",
         terms_of_service="https://www.example.com/terms/",
         contact=openapi.Contact(email="contact@example.com"),
         license=openapi.License(name="MIT License"),

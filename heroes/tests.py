@@ -262,4 +262,28 @@ def test_get_hero_no_results(client):
 def test_get_hero_invalid_numeric_param(client):
     Hero.objects.create(api_id=644, name='Superman', intelligence=94, strength=100, speed=100, power=100)
     response = client.get(reverse('hero'), {'intelligence': 'invalid', 'intelligence_op': 'eq'})
-    assert response.status_code == 400  # Assuming view handles invalid input
+    assert response.status_code == 400
+    assert response.json() == {'error': 'Invalid value for intelligence'}
+
+@pytest.mark.django_db
+def test_get_hero_negative_param(client):
+    Hero.objects.create(api_id=644, name='Superman', intelligence=94, strength=100, speed=100, power=100)
+    response = client.get(reverse('hero'), {'intelligence': -1, 'intelligence_op': 'eq'})
+    assert response.status_code == 400
+    assert response.json() == {'error': 'Invalid value for intelligence'}
+
+@pytest.mark.django_db
+def test_swagger_ui_accessible(client):
+    response = client.get('/swagger/')
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'Superhero API' in content  # Check for page title
+    assert 'swagger-ui' in content  # Check for Swagger UI script
+
+@pytest.mark.django_db
+def test_redoc_accessible(client):
+    response = client.get('/redoc/')
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'Superhero API' in content  # Check for page title
+    assert 'redoc.min.js' in content  # Check for ReDoc script
