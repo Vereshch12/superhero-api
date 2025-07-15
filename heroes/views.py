@@ -9,17 +9,15 @@ from .services import SuperheroAPIService
 class HeroView(APIView):
     def post(self, request):
         name = request.data.get('name')
-        if not name:
+        if not name or not isinstance(name, str) or not name.strip():
             return Response({'error': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         service = SuperheroAPIService()
         try:
             hero_data = service.get_hero_by_name(name)
             if hero_data['response'] == 'success' and hero_data['results']:
-                # Check for exact name match
                 for result in hero_data['results']:
                     if result['name'].lower() == name.lower():
-                        # Check if hero exists in DB
                         if Hero.objects.filter(name__iexact=name).exists():
                             return Response({'error': 'Hero already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -58,24 +56,31 @@ class HeroView(APIView):
             queryset = queryset.filter(name__iexact=name)
 
         def apply_filter(field, value, op):
-            if value is not None:
+            try:
                 value = int(value)
+                if value < 0:
+                    raise ValueError("Value must be non-negative")
                 if op == 'gte':
                     return Q(**{f'{field}__gte': value})
                 elif op == 'lte':
                     return Q(**{f'{field}__lte': value})
                 else:  # eq
                     return Q(**{f'{field}': value})
+            except (ValueError, TypeError):
+                return Response({'error': f'Invalid value for {field}'}, status=status.HTTP_400_BAD_REQUEST)
 
         filters = Q()
-        if intelligence:
-            filters &= apply_filter('intelligence', intelligence, intelligence_op)
-        if strength:
-            filters &= apply_filter('strength', strength, strength_op)
-        if speed:
-            filters &= apply_filter('speed', speed, speed_op)
-        if power:
-            filters &= apply_filter('power', power, power_op)
+        for field, value, op in [
+            ('intelligence', intelligence, intelligence_op),
+            ('strength', strength, strength_op),
+            ('speed', speed, speed_op),
+            ('power', power, power_op)
+        ]:
+            if value:
+                result = apply_filter(field, value, op)
+                if isinstance(result, Response):
+                    return result
+                filters &= result
 
         queryset = queryset.filter(filters)
 
