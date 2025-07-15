@@ -22,3 +22,4 @@ media/
 
 # Docker
 *.dockerignore
+postgres_data/
