@@ -7,7 +7,25 @@ from .serializers import HeroSerializer
 from .services import SuperheroAPIService
 
 class HeroView(APIView):
+    """
+    API endpoint for managing superheroes.
+
+    POST: Add a new hero by name, fetching data from Superhero API.
+    GET: Retrieve heroes with optional filters for name, intelligence, strength, speed, and power.
+    """
     def post(self, request):
+        """
+        Add a new hero to the database.
+
+        Parameters:
+        - name (str): The name of the hero (required).
+
+        Returns:
+        - 201: Hero created successfully with details.
+        - 400: Invalid request (missing or empty name, hero already exists).
+        - 404: Hero not found in Superhero API.
+        - 500: Server error (e.g., Superhero API unavailable).
+        """
         name = request.data.get('name')
         if not name or not isinstance(name, str) or not name.strip():
             return Response({'error': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -40,6 +58,25 @@ class HeroView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self, request):
+        """
+        Retrieve heroes with optional filters.
+
+        Query Parameters:
+        - name (str, optional): Exact match for hero name (case-insensitive).
+        - intelligence (int, optional): Filter by intelligence value.
+        - intelligence_op (str, optional): Operator for intelligence ('eq', 'gte', 'lte'). Default: 'eq'.
+        - strength (int, optional): Filter by strength value.
+        - strength_op (str, optional): Operator for strength ('eq', 'gte', 'lte'). Default: 'eq'.
+        - speed (int, optional): Filter by speed value.
+        - speed_op (str, optional): Operator for speed ('eq', 'gte', 'lte'). Default: 'eq'.
+        - power (int, optional): Filter by power value.
+        - power_op (str, optional): Operator for power ('eq', 'gte', 'lte'). Default: 'eq'.
+
+        Returns:
+        - 200: List of heroes matching the criteria.
+        - 400: Invalid numeric parameter.
+        - 404: No heroes found matching the criteria.
+        """
         name = request.query_params.get('name')
         intelligence = request.query_params.get('intelligence')
         intelligence_op = request.query_params.get('intelligence_op', 'eq')
